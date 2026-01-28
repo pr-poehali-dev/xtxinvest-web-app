@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "Get all users for admin panel",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "users": "array",
+        "stats": {
+          "total_users": "number",
+          "active_users": "number",
+          "total_cards": "number"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

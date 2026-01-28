@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Get user data by ID",
+      "method": "GET",
+      "path": "/?user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "id": 1,
+          "full_name": "string"
+        },
+        "accounts": "array",
+        "cards": "array",
+        "transactions": "array",
+        "total_rewards": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

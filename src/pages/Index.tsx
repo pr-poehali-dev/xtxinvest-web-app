@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,31 +10,105 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
+  const [adminData, setAdminData] = useState<any>(null);
+  const [paymentSystems, setPaymentSystems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const balance = 1247850.50;
-  const savingsBalance = 450000.00;
+  useEffect(() => {
+    fetchUserData();
+    fetchAdminData();
+    fetchPaymentSystems();
+  }, []);
 
-  const cards = [
-    { id: 1, type: 'МИР', number: '•••• 4892', balance: 247850.50, color: 'from-blue-600 to-blue-400' },
-    { id: 2, type: 'VISA', number: '•••• 7231', balance: 1000000.00, color: 'from-purple-600 to-purple-400' },
-    { id: 3, type: 'Mastercard', number: '•••• 5678', balance: 0.00, color: 'from-cyan-600 to-cyan-400' },
-  ];
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/6c003deb-8849-4f38-84ef-37cc8887b102?user_id=1');
+      const data = await response.json();
+      setUserData(data);
+    } catch (error) {
+      toast({ title: 'Ошибка загрузки данных', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const transactions = [
-    { id: 1, title: 'Яндекс.Маркет', amount: -12450, date: '28 янв', category: 'Покупки', icon: 'ShoppingBag' },
-    { id: 2, title: 'Зарплата', amount: +150000, date: '27 янв', category: 'Доход', icon: 'TrendingUp' },
-    { id: 3, title: 'Wildberries', amount: -5680, date: '26 янв', category: 'Покупки', icon: 'ShoppingBag' },
-    { id: 4, title: 'Кэшбэк', amount: +1250, date: '25 янв', category: 'Бонусы', icon: 'Gift' },
-  ];
+  const fetchAdminData = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/442de5b0-88c5-4622-aa19-5a3048392fc2');
+      const data = await response.json();
+      setAdminData(data);
+    } catch (error) {
+      console.error('Ошибка загрузки админ данных:', error);
+    }
+  };
+
+  const fetchPaymentSystems = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/323a843c-1b38-4d70-8329-564c95a8ff2e');
+      const data = await response.json();
+      setPaymentSystems(data.payment_systems || []);
+    } catch (error) {
+      console.error('Ошибка загрузки платёжных систем:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Загрузка данных...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const balance = userData?.accounts?.reduce((sum: number, acc: any) => sum + acc.balance, 0) || 0;
+  const savingsBalance = userData?.accounts?.find((acc: any) => acc.account_type === 'savings')?.balance || 0;
+  
+  const getCardColor = (type: string) => {
+    if (type === 'МИР') return 'from-blue-600 to-blue-400';
+    if (type === 'VISA') return 'from-purple-600 to-purple-400';
+    return 'from-cyan-600 to-cyan-400';
+  };
+  
+  const getTransactionIcon = (type: string) => {
+    if (type === 'expense') return 'ShoppingBag';
+    if (type === 'income') return 'TrendingUp';
+    if (type === 'reward') return 'Gift';
+    return 'ArrowRightLeft';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  };
+
+  const cards = userData?.cards?.map((card: any) => ({
+    ...card,
+    type: card.card_type,
+    number: '•••• ' + card.card_number.slice(-4),
+    color: getCardColor(card.card_type)
+  })) || [];
+
+  const transactions = userData?.transactions?.map((tx: any) => ({
+    ...tx,
+    title: tx.recipient_name || tx.description,
+    date: formatDate(tx.created_at),
+    icon: getTransactionIcon(tx.transaction_type)
+  })) || [];
 
   const rewards = [
     { title: 'Кэшбэк на покупки', value: '5%', icon: 'Percent' },
-    { title: 'Бонусные рубли', value: '12,450', icon: 'Coins' },
-    { title: 'Уровень привилегий', value: 'Premium', icon: 'Crown' },
+    { title: 'Бонусные рубли', value: userData?.total_rewards?.toLocaleString('ru-RU') || '0', icon: 'Coins' },
+    { title: 'Уровень привилегий', value: userData?.user?.premium_level === 'premium' ? 'Premium' : 'Standard', icon: 'Crown' },
   ];
 
   const renderHome = () => (
@@ -42,13 +116,15 @@ const Index = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-            Добрый день, Александр
+            Добрый день, {userData?.user?.full_name?.split(' ')[0] || 'Пользователь'}
           </h1>
           <p className="text-muted-foreground mt-1">Добро пожаловать в XTXinvest</p>
         </div>
         <Avatar className="h-14 w-14 border-2 border-primary">
           <AvatarImage src="" />
-          <AvatarFallback className="bg-gradient-blue text-white text-lg">АИ</AvatarFallback>
+          <AvatarFallback className="bg-gradient-blue text-white text-lg">
+            {userData?.user?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+          </AvatarFallback>
         </Avatar>
       </div>
 
@@ -230,7 +306,7 @@ const Index = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="text-sm text-muted-foreground mb-1">Доступно бонусов</div>
-            <div className="text-4xl font-bold">12,450 ₽</div>
+            <div className="text-4xl font-bold">{(userData?.total_rewards || 0).toLocaleString('ru-RU')} ₽</div>
           </div>
           <div className="w-16 h-16 rounded-full bg-gradient-blue flex items-center justify-center">
             <Icon name="Gift" size={32} className="text-white" />
@@ -284,13 +360,13 @@ const Index = () => {
 
       <div className="grid md:grid-cols-3 gap-4">
         {[
-          { title: 'Всего пользователей', value: '1,247', icon: 'Users', color: 'from-blue-600 to-blue-400' },
-          { title: 'Активных карт', value: '3,891', icon: 'CreditCard', color: 'from-purple-600 to-purple-400' },
-          { title: 'Транзакций сегодня', value: '5,678', icon: 'TrendingUp', color: 'from-cyan-600 to-cyan-400' },
+          { title: 'Всего пользователей', value: adminData?.stats?.total_users || 0, icon: 'Users', color: 'from-blue-600 to-blue-400' },
+          { title: 'Активных карт', value: adminData?.stats?.total_cards || 0, icon: 'CreditCard', color: 'from-purple-600 to-purple-400' },
+          { title: 'Транзакций сегодня', value: adminData?.stats?.today_transactions || 0, icon: 'TrendingUp', color: 'from-cyan-600 to-cyan-400' },
         ].map((stat) => (
           <Card key={stat.title} className={`p-6 bg-gradient-to-br ${stat.color} border-0 text-white`}>
             <Icon name={stat.icon} size={32} className="mb-4 opacity-80" />
-            <div className="text-3xl font-bold mb-1">{stat.value}</div>
+            <div className="text-3xl font-bold mb-1">{stat.value.toLocaleString('ru-RU')}</div>
             <div className="text-sm opacity-90">{stat.title}</div>
           </Card>
         ))}
@@ -310,24 +386,20 @@ const Index = () => {
           </div>
           
           <div className="space-y-2">
-            {[
-              { name: 'Александр Иванов', id: 'USR-001', balance: 1247850, status: 'active' },
-              { name: 'Мария Петрова', id: 'USR-002', balance: 850000, status: 'active' },
-              { name: 'Иван Сидоров', id: 'USR-003', balance: 420000, status: 'pending' },
-            ].map((user) => (
+            {(adminData?.users || []).map((user: any) => (
               <div key={user.id} className="p-4 rounded-lg bg-card border border-border flex items-center justify-between hover:bg-primary/5 transition-colors">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12 border-2 border-primary/30">
-                    <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <AvatarFallback>{user.full_name.split(' ').map((n: string) => n[0]).join('')}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-muted-foreground">{user.id}</div>
+                    <div className="font-medium">{user.full_name}</div>
+                    <div className="text-sm text-muted-foreground">{user.phone}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <div className="font-semibold">{user.balance.toLocaleString('ru-RU')} ₽</div>
+                    <div className="font-semibold">{user.total_balance.toLocaleString('ru-RU')} ₽</div>
                     <Badge variant={user.status === 'active' ? 'default' : 'outline'} className="mt-1">
                       {user.status === 'active' ? 'Активен' : 'Ожидание'}
                     </Badge>
@@ -345,14 +417,9 @@ const Index = () => {
       <Card className="glass-effect border-primary/20 p-6">
         <h2 className="text-xl font-semibold mb-4">Настройки платёжных систем</h2>
         <div className="space-y-4">
-          {[
-            { name: 'МИР', enabled: true },
-            { name: 'VISA / Mastercard (Международные)', enabled: false },
-            { name: 'Крипто-интеграция', enabled: false },
-            { name: 'Пользовательские платёжные системы', enabled: false },
-          ].map((system) => (
-            <div key={system.name} className="flex items-center justify-between p-4 rounded-lg bg-card border border-border">
-              <div className="font-medium">{system.name}</div>
+          {paymentSystems.map((system) => (
+            <div key={system.id} className="flex items-center justify-between p-4 rounded-lg bg-card border border-border">
+              <div className="font-medium">{system.system_name}</div>
               <Switch defaultChecked={system.enabled} />
             </div>
           ))}
@@ -369,12 +436,16 @@ const Index = () => {
         <div className="flex items-center gap-6 mb-6">
           <Avatar className="h-24 w-24 border-4 border-primary/30">
             <AvatarImage src="" />
-            <AvatarFallback className="bg-gradient-blue text-white text-3xl">АИ</AvatarFallback>
+            <AvatarFallback className="bg-gradient-blue text-white text-3xl">
+              {userData?.user?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold">Александр Иванов</h2>
-            <p className="text-muted-foreground">+7 (999) 123-45-67</p>
-            <Badge className="mt-2 bg-accent">Premium клиент</Badge>
+            <h2 className="text-2xl font-bold">{userData?.user?.full_name || 'Пользователь'}</h2>
+            <p className="text-muted-foreground">{userData?.user?.phone || ''}</p>
+            <Badge className="mt-2 bg-accent">
+              {userData?.user?.premium_level === 'premium' ? 'Premium клиент' : 'Стандартный клиент'}
+            </Badge>
           </div>
           <Button variant="outline">Редактировать</Button>
         </div>

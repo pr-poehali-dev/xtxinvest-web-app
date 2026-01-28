@@ -1,0 +1,5 @@
+{
+  "get-user-data": "https://functions.poehali.dev/6c003deb-8849-4f38-84ef-37cc8887b102",
+  "get-payment-systems": "https://functions.poehali.dev/323a843c-1b38-4d70-8329-564c95a8ff2e",
+  "admin-get-users": "https://functions.poehali.dev/442de5b0-88c5-4622-aa19-5a3048392fc2"
+}
