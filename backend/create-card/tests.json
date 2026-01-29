@@ -1,0 +1,38 @@
+{
+  "tests": [
+    {
+      "name": "Create МИР virtual card",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "card_type": "МИР"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "card_number": "string",
+        "card_type": "string",
+        "expiry_date": "string",
+        "balance": "number",
+        "is_virtual": true
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create Visa virtual card",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 2,
+        "card_type": "Visa"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "card_type": "string",
+        "is_virtual": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

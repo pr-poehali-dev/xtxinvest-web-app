@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -19,6 +21,10 @@ const Index = () => {
   const [adminData, setAdminData] = useState<any>(null);
   const [paymentSystems, setPaymentSystems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createCardOpen, setCreateCardOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedCardType, setSelectedCardType] = useState('МИР');
+  const [creatingCard, setCreatingCard] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,6 +62,36 @@ const Index = () => {
       setPaymentSystems(data.payment_systems || []);
     } catch (error) {
       console.error('Ошибка загрузки платёжных систем:', error);
+    }
+  };
+
+  const createVirtualCard = async () => {
+    if (!selectedUserId) {
+      toast({ title: 'Выберите пользователя', variant: 'destructive' });
+      return;
+    }
+
+    setCreatingCard(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/411cd977-ca70-4564-8be5-7c59bbaff76e', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: parseInt(selectedUserId), card_type: selectedCardType })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({ title: 'Виртуальная карта создана', description: `Карта ${data.card_type} успешно выпущена` });
+        setCreateCardOpen(false);
+        fetchAdminData();
+      } else {
+        toast({ title: 'Ошибка создания карты', description: data.error, variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка сети', variant: 'destructive' });
+    } finally {
+      setCreatingCard(false);
     }
   };
 
@@ -424,6 +460,65 @@ const Index = () => {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card className="glass-effect border-primary/20 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">Выпуск виртуальных карт</h2>
+          <Dialog open={createCardOpen} onOpenChange={setCreateCardOpen}>
+            <DialogTrigger asChild>
+              <Button className="gradient-blue">
+                <Icon name="CreditCard" size={20} className="mr-2" />
+                Создать карту
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Создание виртуальной карты</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Пользователь</Label>
+                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите пользователя" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(adminData?.users || []).map((user: any) => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.full_name} ({user.phone})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Тип карты</Label>
+                  <Select value={selectedCardType} onValueChange={setSelectedCardType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="МИР">МИР</SelectItem>
+                      <SelectItem value="Visa">Visa</SelectItem>
+                      <SelectItem value="Mastercard">Mastercard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button 
+                  onClick={createVirtualCard} 
+                  disabled={creatingCard}
+                  className="w-full gradient-blue"
+                >
+                  {creatingCard ? 'Создание...' : 'Создать виртуальную карту'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Выпуск виртуальных карт для пользователей без физического носителя
+        </p>
       </Card>
     </div>
   );
