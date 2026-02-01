@@ -14,14 +14,16 @@ def handler(event: dict, context) -> dict:
                 'Access-Control-Allow-Methods': 'POST, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
 
     if method != 'POST':
         return {
             'statusCode': 405,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Method not allowed'})
+            'body': json.dumps({'error': 'Method not allowed'}),
+            'isBase64Encoded': False
         }
 
     try:
@@ -35,7 +37,8 @@ def handler(event: dict, context) -> dict:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Номер телефона обязателен'})
+                'body': json.dumps({'error': 'Номер телефона обязателен'}),
+                'isBase64Encoded': False
             }
 
         dsn = os.environ.get('DATABASE_URL')
@@ -43,7 +46,8 @@ def handler(event: dict, context) -> dict:
             return {
                 'statusCode': 500,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'DATABASE_URL not configured'})
+                'body': json.dumps({'error': 'DATABASE_URL not configured'}),
+                'isBase64Encoded': False
             }
 
         conn = psycopg2.connect(dsn)
@@ -52,7 +56,7 @@ def handler(event: dict, context) -> dict:
         # Поиск пользователя по телефону (Simple Query Protocol)
         phone_escaped = phone.replace("'", "''")
         cur.execute(
-            f"SELECT id, phone, full_name, balance FROM users WHERE phone = '{phone_escaped}'"
+            f"SELECT id, phone, full_name FROM users WHERE phone = '{phone_escaped}'"
         )
         user = cur.fetchone()
         
@@ -63,7 +67,8 @@ def handler(event: dict, context) -> dict:
             return {
                 'statusCode': 404,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Пользователь не найден'})
+                'body': json.dumps({'error': 'Пользователь не найден'}),
+                'isBase64Encoded': False
             }
 
         return {
@@ -75,14 +80,16 @@ def handler(event: dict, context) -> dict:
                     'id': user[0],
                     'phone': user[1],
                     'full_name': user[2],
-                    'balance': float(user[3])
+                    'balance': 0.0
                 }
-            })
+            }),
+            'isBase64Encoded': False
         }
 
     except Exception as e:
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': str(e)})
+            'body': json.dumps({'error': str(e)}),
+            'isBase64Encoded': False
         }

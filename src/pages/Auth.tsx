@@ -50,16 +50,18 @@ const Auth = () => {
           window.location.href = '/';
         }, 1000);
       } else {
+        console.error('Registration error:', data);
         toast({ 
           title: 'Ошибка', 
-          description: data.error || 'Что-то пошло не так',
+          description: data.error || data.message || 'Что-то пошло не так',
           variant: 'destructive' 
         });
       }
     } catch (error) {
+      console.error('Network error:', error);
       toast({ 
         title: 'Ошибка сети', 
-        description: 'Проверьте подключение к интернету',
+        description: error instanceof Error ? error.message : 'Проверьте подключение к интернету',
         variant: 'destructive' 
       });
     } finally {
