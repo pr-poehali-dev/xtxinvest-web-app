@@ -25,9 +25,19 @@ const Index = () => {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedCardType, setSelectedCardType] = useState('МИР');
   const [creatingCard, setCreatingCard] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Проверяем авторизацию
+    const userId = localStorage.getItem('user_id');
+    if (!userId) {
+      setCheckingAuth(false);
+      window.location.href = '/auth';
+      return;
+    }
+    
+    setCheckingAuth(false);
     fetchUserData();
     fetchAdminData();
     fetchPaymentSystems();
@@ -35,9 +45,15 @@ const Index = () => {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('https://functions.poehali.dev/6c003deb-8849-4f38-84ef-37cc8887b102?user_id=1');
+      const userId = localStorage.getItem('user_id') || '1';
+      const response = await fetch(`https://functions.poehali.dev/6c003deb-8849-4f38-84ef-37cc8887b102?user_id=${userId}`);
       const data = await response.json();
       setUserData(data);
+      
+      // Проверка роли администратора (user_id = 1)
+      if (userId === '1') {
+        setIsAdmin(true);
+      }
     } catch (error) {
       toast({ title: 'Ошибка загрузки данных', variant: 'destructive' });
     } finally {
@@ -95,12 +111,14 @@ const Index = () => {
     }
   };
 
-  if (loading) {
+  if (checkingAuth || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Загрузка данных...</p>
+          <p className="text-muted-foreground">
+            {checkingAuth ? 'Проверка авторизации...' : 'Загрузка данных...'}
+          </p>
         </div>
       </div>
     );
@@ -575,6 +593,21 @@ const Index = () => {
               <span>Настройки</span>
             </div>
             <Icon name="ChevronRight" size={20} />
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <div 
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-destructive/10 transition-colors cursor-pointer"
+            onClick={() => {
+              localStorage.removeItem('user_id');
+              window.location.href = '/auth';
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <Icon name="LogOut" size={20} className="text-destructive" />
+              <span className="text-destructive">Выйти из аккаунта</span>
+            </div>
           </div>
         </div>
       </Card>

@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "Registration without full name",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "phone": "+79991234567"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

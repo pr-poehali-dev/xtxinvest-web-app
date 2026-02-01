@@ -1,4 +1,6 @@
 {
+  "register": "https://functions.poehali.dev/56263a08-83a9-4660-9c27-1227f40eff6e",
+  "login": "https://functions.poehali.dev/6d1d8ac7-e3fa-4dba-9f54-9a72566b16e5",
   "create-card": "https://functions.poehali.dev/411cd977-ca70-4564-8be5-7c59bbaff76e",
   "get-user-data": "https://functions.poehali.dev/6c003deb-8849-4f38-84ef-37cc8887b102",
   "get-payment-systems": "https://functions.poehali.dev/323a843c-1b38-4d70-8329-564c95a8ff2e",
