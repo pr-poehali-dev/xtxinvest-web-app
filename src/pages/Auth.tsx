@@ -84,10 +84,10 @@ const Auth = () => {
           {/* Logo & Title */}
           <div className="text-center space-y-3">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary mb-2 shadow-lg">
-              <Icon name="Wallet" size={40} className="text-primary-foreground" />
+              <Icon name="TrendingUp" size={40} className="text-primary-foreground" />
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              WalletPay
+              XTXinvest
             </h1>
             <p className="text-muted-foreground">
               {isLogin ? 'Войдите в свой аккаунт' : 'Создайте новый аккаунт'}
@@ -186,7 +186,7 @@ const Auth = () => {
           {/* Features */}
           <div className="pt-6 space-y-3 border-t border-primary/10">
             <p className="text-xs text-center text-muted-foreground mb-3">
-              Преимущества WalletPay:
+              Преимущества XTXinvest:
             </p>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="space-y-2">
@@ -215,7 +215,7 @@ const Auth = () => {
       {/* Footer */}
       <div className="absolute bottom-6 left-0 right-0 text-center">
         <p className="text-xs text-muted-foreground">
-          © 2024 WalletPay. Все права защищены
+          © 2024 XTXinvest. Все права защищены
         </p>
       </div>
     </div>
