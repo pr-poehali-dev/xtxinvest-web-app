@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "Transfer without sender",
+      "method": "POST",
+      "body": {
+        "recipient_phone": "+79001234567",
+        "amount": 100
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

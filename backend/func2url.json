@@ -1,4 +1,8 @@
 {
+  "transfer": "https://functions.poehali.dev/0bed53e0-2c92-4c8e-9317-f22cc9f6c297",
+  "savings-withdraw": "https://functions.poehali.dev/04e17fbf-ad37-43ec-b2bd-4fc86088f12a",
+  "add-cashback": "https://functions.poehali.dev/f51d196c-fe8f-4252-8fe8-5e91ae2311b3",
+  "savings-deposit": "https://functions.poehali.dev/7f5968ea-5199-4fb7-8833-920e7b0ec3c9",
   "register": "https://functions.poehali.dev/56263a08-83a9-4660-9c27-1227f40eff6e",
   "login": "https://functions.poehali.dev/6d1d8ac7-e3fa-4dba-9f54-9a72566b16e5",
   "create-card": "https://functions.poehali.dev/411cd977-ca70-4564-8be5-7c59bbaff76e",

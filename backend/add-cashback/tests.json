@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Add cashback without user_id",
+      "method": "POST",
+      "body": {
+        "transaction_amount": 1000
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

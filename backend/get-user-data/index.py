@@ -103,12 +103,28 @@ def handler(event: dict, context) -> dict:
             })
         
         cur.execute(f"""
-            SELECT SUM(amount) as total_rewards
-            FROM {os.environ['MAIN_DB_SCHEMA']}.rewards
-            WHERE user_id = {user_id} AND status = 'active'
+            SELECT COALESCE(SUM(amount), 0) as total_cashback
+            FROM {os.environ['MAIN_DB_SCHEMA']}.cashback
+            WHERE user_id = {user_id}
         """)
         
         total_rewards = cur.fetchone()[0] or 0
+        
+        cur.execute(f"""
+            SELECT id, balance, interest_rate, total_earned
+            FROM {os.environ['MAIN_DB_SCHEMA']}.savings_accounts
+            WHERE user_id = {user_id}
+        """)
+        
+        savings_row = cur.fetchone()
+        savings_account = None
+        if savings_row:
+            savings_account = {
+                'id': savings_row[0],
+                'balance': float(savings_row[1]),
+                'interest_rate': float(savings_row[2]),
+                'total_earned': float(savings_row[3])
+            }
         
         cur.close()
         conn.close()
@@ -121,7 +137,8 @@ def handler(event: dict, context) -> dict:
                 'accounts': accounts,
                 'cards': cards,
                 'transactions': transactions,
-                'total_rewards': float(total_rewards)
+                'total_rewards': float(total_rewards),
+                'savings_account': savings_account
             }),
             'isBase64Encoded': False
         }

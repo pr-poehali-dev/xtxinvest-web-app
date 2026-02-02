@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Deposit without user_id",
+      "method": "POST",
+      "body": {
+        "amount": 1000
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

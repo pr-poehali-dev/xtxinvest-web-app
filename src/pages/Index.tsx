@@ -13,6 +13,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { SavingsDepositForm } from '@/components/SavingsDepositForm';
+import { SavingsWithdrawForm } from '@/components/SavingsWithdrawForm';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
@@ -26,6 +28,10 @@ const Index = () => {
   const [selectedCardType, setSelectedCardType] = useState('МИР');
   const [creatingCard, setCreatingCard] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferring, setTransferring] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -111,6 +117,50 @@ const Index = () => {
     }
   };
 
+  const handleTransfer = async () => {
+    if (!recipientPhone || !transferAmount) {
+      toast({ title: 'Заполните все поля', variant: 'destructive' });
+      return;
+    }
+
+    const amount = parseFloat(transferAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: 'Некорректная сумма', variant: 'destructive' });
+      return;
+    }
+
+    setTransferring(true);
+    try {
+      const userId = localStorage.getItem('user_id');
+      const response = await fetch('https://functions.poehali.dev/0bed53e0-2c92-4c8e-9317-f22cc9f6c297', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_id: parseInt(userId || '0'),
+          recipient_phone: recipientPhone,
+          amount: amount,
+          description: 'Перевод через приложение'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({ title: 'Перевод выполнен!', description: `${amount} ₽ отправлено ${data.recipient_name}` });
+        setTransferDialogOpen(false);
+        setRecipientPhone('');
+        setTransferAmount('');
+        fetchUserData();
+      } else {
+        toast({ title: 'Ошибка перевода', description: data.error, variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка сети', variant: 'destructive' });
+    } finally {
+      setTransferring(false);
+    }
+  };
+
   if (checkingAuth || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -125,7 +175,7 @@ const Index = () => {
   }
 
   const balance = userData?.accounts?.reduce((sum: number, acc: any) => sum + acc.balance, 0) || 0;
-  const savingsBalance = userData?.accounts?.find((acc: any) => acc.account_type === 'savings')?.balance || 0;
+  const savingsBalance = userData?.savings_account?.balance || 0;
   
   const getCardColor = (type: string) => {
     if (type === 'МИР') return 'from-blue-600 to-blue-400';
@@ -191,17 +241,55 @@ const Index = () => {
           {balance.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
         </div>
         <div className="grid grid-cols-4 gap-3">
-          {[
-            { icon: 'Send', label: 'Перевод' },
-            { icon: 'Smartphone', label: 'Платежи' },
-            { icon: 'QrCode', label: 'QR-код' },
-            { icon: 'MoreHorizontal', label: 'Ещё' }
-          ].map((action) => (
-            <Button key={action.label} variant="ghost" className="flex-col h-auto py-3 hover:bg-primary/10">
-              <Icon name={action.icon} size={24} className="mb-2" />
-              <span className="text-xs">{action.label}</span>
-            </Button>
-          ))}
+          <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" className="flex-col h-auto py-3 hover:bg-primary/10">
+                <Icon name="Send" size={24} className="mb-2" />
+                <span className="text-xs">Перевод</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Перевод денег</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <Label htmlFor="recipient-phone">Номер телефона получателя</Label>
+                  <Input
+                    id="recipient-phone"
+                    placeholder="+7 (900) 123-45-67"
+                    value={recipientPhone}
+                    onChange={(e) => setRecipientPhone(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="transfer-amount">Сумма перевода</Label>
+                  <Input
+                    id="transfer-amount"
+                    type="number"
+                    placeholder="1000"
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                  />
+                </div>
+                <Button onClick={handleTransfer} disabled={transferring} className="w-full">
+                  {transferring ? 'Отправка...' : 'Отправить'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="ghost" className="flex-col h-auto py-3 hover:bg-primary/10">
+            <Icon name="Smartphone" size={24} className="mb-2" />
+            <span className="text-xs">Платежи</span>
+          </Button>
+          <Button variant="ghost" className="flex-col h-auto py-3 hover:bg-primary/10">
+            <Icon name="QrCode" size={24} className="mb-2" />
+            <span className="text-xs">QR-код</span>
+          </Button>
+          <Button variant="ghost" className="flex-col h-auto py-3 hover:bg-primary/10">
+            <Icon name="MoreHorizontal" size={24} className="mb-2" />
+            <span className="text-xs">Ещё</span>
+          </Button>
         </div>
       </Card>
 
@@ -311,30 +399,89 @@ const Index = () => {
     </div>
   );
 
-  const renderTransfers = () => (
-    <div className="space-y-6 animate-fade-in">
-      <h1 className="text-3xl font-bold">Переводы</h1>
-      
-      <Card className="glass-effect border-primary/20 p-6">
-        <div className="space-y-4">
-          <div>
-            <Label>Получатель</Label>
-            <Input placeholder="Номер телефона или карты" className="mt-2 bg-background/50" />
+  const renderTransfers = () => {
+    const [localRecipientPhone, setLocalRecipientPhone] = useState('');
+    const [localTransferAmount, setLocalTransferAmount] = useState('');
+    const [localTransferring, setLocalTransferring] = useState(false);
+
+    const handleLocalTransfer = async () => {
+      if (!localRecipientPhone || !localTransferAmount) {
+        toast({ title: 'Заполните все поля', variant: 'destructive' });
+        return;
+      }
+
+      const amount = parseFloat(localTransferAmount);
+      if (isNaN(amount) || amount <= 0) {
+        toast({ title: 'Некорректная сумма', variant: 'destructive' });
+        return;
+      }
+
+      setLocalTransferring(true);
+      try {
+        const userId = localStorage.getItem('user_id');
+        const response = await fetch('https://functions.poehali.dev/0bed53e0-2c92-4c8e-9317-f22cc9f6c297', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender_id: parseInt(userId || '0'),
+            recipient_phone: localRecipientPhone,
+            amount: amount,
+            description: 'Перевод через приложение'
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          toast({ title: 'Перевод выполнен!', description: `${amount} ₽ отправлено ${data.recipient_name}` });
+          setLocalRecipientPhone('');
+          setLocalTransferAmount('');
+          fetchUserData();
+        } else {
+          toast({ title: 'Ошибка перевода', description: data.error, variant: 'destructive' });
+        }
+      } catch (error) {
+        toast({ title: 'Ошибка сети', variant: 'destructive' });
+      } finally {
+        setLocalTransferring(false);
+      }
+    };
+
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <h1 className="text-3xl font-bold">Переводы</h1>
+        
+        <Card className="glass-effect border-primary/20 p-6">
+          <div className="space-y-4">
+            <div>
+              <Label>Получатель</Label>
+              <Input
+                placeholder="Номер телефона"
+                className="mt-2 bg-background/50"
+                value={localRecipientPhone}
+                onChange={(e) => setLocalRecipientPhone(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Сумма</Label>
+              <Input
+                type="number"
+                placeholder="0.00 ₽"
+                className="mt-2 bg-background/50 text-2xl font-semibold h-14"
+                value={localTransferAmount}
+                onChange={(e) => setLocalTransferAmount(e.target.value)}
+              />
+            </div>
+            <Button
+              onClick={handleLocalTransfer}
+              disabled={localTransferring}
+              className="w-full gradient-blue hover:opacity-90 h-12 mt-4"
+            >
+              <Icon name="Send" size={20} className="mr-2" />
+              {localTransferring ? 'Отправка...' : 'Отправить перевод'}
+            </Button>
           </div>
-          <div>
-            <Label>Сумма</Label>
-            <Input placeholder="0.00 ₽" className="mt-2 bg-background/50 text-2xl font-semibold h-14" />
-          </div>
-          <div>
-            <Label>Комментарий</Label>
-            <Input placeholder="Необязательно" className="mt-2 bg-background/50" />
-          </div>
-          <Button className="w-full gradient-blue hover:opacity-90 h-12 mt-4">
-            <Icon name="Send" size={20} className="mr-2" />
-            Отправить перевод
-          </Button>
-        </div>
-      </Card>
+        </Card>
 
       <div>
         <h2 className="text-lg font-semibold mb-4">Быстрые переводы</h2>
@@ -350,7 +497,8 @@ const Index = () => {
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderRewards = () => (
     <div className="space-y-6 animate-fade-in">
@@ -627,7 +775,31 @@ const Index = () => {
               <span className="text-sm text-muted-foreground">Накопительный счёт (8% годовых)</span>
               <Icon name="TrendingUp" size={20} className="text-green-400" />
             </div>
-            <div className="text-2xl font-bold">{savingsBalance.toLocaleString('ru-RU')} ₽</div>
+            <div className="text-2xl font-bold mb-3">{savingsBalance.toLocaleString('ru-RU')} ₽</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="w-full">Пополнить</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Пополнение накопительного счёта</DialogTitle>
+                  </DialogHeader>
+                  <SavingsDepositForm userId={userData?.user?.id} onSuccess={() => fetchUserData()} />
+                </DialogContent>
+              </Dialog>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="w-full">Снять</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Снятие с накопительного счёта</DialogTitle>
+                  </DialogHeader>
+                  <SavingsWithdrawForm userId={userData?.user?.id} onSuccess={() => fetchUserData()} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </Card>

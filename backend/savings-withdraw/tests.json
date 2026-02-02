@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Withdraw without amount",
+      "method": "POST",
+      "body": {
+        "user_id": 1
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
