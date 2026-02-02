@@ -560,17 +560,42 @@ const Index = () => {
         <Badge className="bg-accent">Admin</Badge>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-4 gap-4">
         {[
           { title: 'Всего пользователей', value: adminData?.stats?.total_users || 0, icon: 'Users', color: 'from-blue-600 to-blue-400' },
           { title: 'Активных карт', value: adminData?.stats?.total_cards || 0, icon: 'CreditCard', color: 'from-purple-600 to-purple-400' },
           { title: 'Транзакций сегодня', value: adminData?.stats?.today_transactions || 0, icon: 'TrendingUp', color: 'from-cyan-600 to-cyan-400' },
+          { title: 'Начислить проценты', action: true, icon: 'Percent', color: 'from-green-600 to-green-400' },
         ].map((stat) => (
-          <Card key={stat.title} className={`p-6 bg-gradient-to-br ${stat.color} border-0 text-white`}>
-            <Icon name={stat.icon} size={32} className="mb-4 opacity-80" />
-            <div className="text-3xl font-bold mb-1">{stat.value.toLocaleString('ru-RU')}</div>
-            <div className="text-sm opacity-90">{stat.title}</div>
-          </Card>
+          stat.action ? (
+            <Card 
+              key={stat.title} 
+              className={`p-6 bg-gradient-to-br ${stat.color} border-0 text-white cursor-pointer hover:opacity-90 transition-opacity`}
+              onClick={async () => {
+                try {
+                  const response = await fetch('https://functions.poehali.dev/e50d7ab6-41e8-41d0-adb7-a493a53db167', { method: 'POST' });
+                  const data = await response.json();
+                  if (response.ok) {
+                    toast({ title: 'Проценты начислены!', description: `Обработано счетов: ${data.processed_accounts}, Начислено: ${data.total_interest_paid.toFixed(2)} ₽` });
+                    fetchAdminData();
+                  } else {
+                    toast({ title: 'Ошибка', description: data.error, variant: 'destructive' });
+                  }
+                } catch {
+                  toast({ title: 'Ошибка сети', variant: 'destructive' });
+                }
+              }}
+            >
+              <Icon name={stat.icon} size={32} className="mb-4 opacity-80" />
+              <div className="text-lg font-bold">{stat.title}</div>
+            </Card>
+          ) : (
+            <Card key={stat.title} className={`p-6 bg-gradient-to-br ${stat.color} border-0 text-white`}>
+              <Icon name={stat.icon} size={32} className="mb-4 opacity-80" />
+              <div className="text-3xl font-bold mb-1">{stat.value.toLocaleString('ru-RU')}</div>
+              <div className="text-sm opacity-90">{stat.title}</div>
+            </Card>
+          )
         ))}
       </div>
 
@@ -775,7 +800,12 @@ const Index = () => {
               <span className="text-sm text-muted-foreground">Накопительный счёт (8% годовых)</span>
               <Icon name="TrendingUp" size={20} className="text-green-400" />
             </div>
-            <div className="text-2xl font-bold mb-3">{savingsBalance.toLocaleString('ru-RU')} ₽</div>
+            <div className="text-2xl font-bold mb-1">{savingsBalance.toLocaleString('ru-RU')} ₽</div>
+            {userData?.savings_account?.total_earned > 0 && (
+              <div className="text-xs text-green-400 mb-3">
+                +{userData.savings_account.total_earned.toLocaleString('ru-RU')} ₽ заработано
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <Dialog>
                 <DialogTrigger asChild>

@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Calculate interest successfully",
+      "method": "POST",
+      "body": {},
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
